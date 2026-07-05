@@ -1,0 +1,29 @@
+name: Idnits
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - .gitignore
+      - README.md
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - .gitignore
+      - README.md
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run idnits in devcontainer
+        uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          runCmd: make idnits
