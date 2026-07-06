@@ -1,6 +1,6 @@
 ---
-title: Service Programming with Segment Routing
-docname: draft-ietf-spring-sr-service-programming-12
+title: SRv6 Service Programming
+docname: draft-ietf-spring-srv6-service-programming-00
 date:
 category: std
 submissionType: IETF
@@ -15,18 +15,12 @@ pi: [toc, sortrefs, symrefs]
 
 author:
  -
-  ins: A. AbdelSalam
-  name: Ahmed AbdelSalam
+  ins: A. Abdelsalam
+  name: Ahmed Abdelsalam
   organization: Cisco Systems, Inc.
   role: editor
   email: ahabdels@cisco.com
   country: Italy
- -
-  ins: X. Xu
-  name: Xiaohu Xu
-  organization: China Mobile
-  role: editor
-  email: xuxiaohu@cmss.chinamobile.com
  -
   ins: C. Filsfils
   name: Clarence Filsfils
@@ -36,8 +30,8 @@ author:
  -
   ins: D. Bernier
   name: Daniel Bernier
-  organization: Bell Canada
-  email: daniel.bernier@bell.ca
+  organization: HPE
+  email: daniel.bernier@hpe.com
   country: Canada
  -
   ins: C. Li
@@ -50,6 +44,25 @@ author:
   organization: Orange
   email: bruno.decraene@orange.com
   country: France
+
+contributor:
+ -
+  ins: F. Clad
+  name: Francois Clad
+  organization: Cisco Systems, Inc.
+  email: fclad.ietf@gmail.com
+  country: France
+ -
+  ins: P. Camarillo
+  name: Pablo Camarillo
+  organization: Cisco Systems, Inc.
+  email: pcamaril@cisco.com
+  country: Spain
+ -
+  ins: X. Xu
+  name: Xiaohu Xu
+  organization: China Mobile
+  email: xuxiaohu@cmss.chinamobile.com
  -
   ins: S. Ma
   name: Shaowen Ma
@@ -73,20 +86,6 @@ author:
   organization: Universita di Roma "Tor Vergata"
   email: stefano.salsano@uniroma2.it
   country: Italy
-
-contributor:
- -
-  ins: F. Clad
-  name: Francois Clad
-  organization: Cisco Systems, Inc.
-  email: fclad.ietf@gmail.com
-  country: France
- -
-  ins: P. Camarillo
-  name: Pablo Camarillo
-  organization: Cisco Systems, Inc.
-  email: pcamaril@cisco.com
-  country: Spain
  -
   ins: B. Peirens
   name: Bart Peirens
@@ -145,17 +144,13 @@ contributor:
 
 normative:
   RFC8402:
-  RFC8660:
   RFC8754:
   RFC8986:
   RFC9256:
 
 informative:
   I-D.dawra-idr-bgp-sr-service-chaining:
-  I-D.xu-mpls-payload-protocol-identifier:
-  RFC7665:
   RFC8300:
-  RFC8595:
   IFIP18:
     author:
      - ins: A. Abdelsalam
@@ -182,15 +177,17 @@ informative:
 
 --- abstract
 
-This document defines data plane functionality required to implement service segments and achieve service programming in SR-enabled MPLS and IPv6 networks, as described in the Segment Routing architecture.
+This document defines data plane functionality required to implement service segments and achieve service programming in SRv6 networks. 
 
 --- middle
 
 # Introduction
 
-Segment Routing (SR) {{RFC8402}} is an architecture based on the source routing paradigm that seeks the right balance between distributed intelligence and centralized programmability.  SR can be used with an MPLS or an IPv6 data plane to steer packets through an ordered list of instructions, called segments.  These segments may encode simple routing instructions for forwarding packets along a specific network path, but also steer them through Virtual Network Functions (VNFs) or physical service appliances available in the network.
+Segment Routing (SR) {{RFC8402}} is an architecture based on the source routing paradigm that seeks the right balance between distributed intelligence and centralized programmability. SR can be used with an MPLS data plane (SR-MPLS) or an IPv6 data plane (SRv6). This document defines the service programming specifications for the SRv6 dataplane. The specifications for the SR-MPLS dataplane are defined in a different document. 
 
-In an SR network, each of these services, running either on a physical appliance or in a virtual environment, are associated with a segment identifier (SID). These service SIDs are then leveraged as part of a SID-list to steer packets through the corresponding services.  Service SIDs may be combined together in a SID-list to achieve service programming, but also with other types of segments as defined in {{RFC8402}}.  SR thus provides a fully integrated solution for overlay, underlay and service programming. Furthermore, the IPv6 instantiation of SR (SRv6) {{RFC8986}} supports metadata transportation in the Segment Routing Header {{RFC8754}}, either natively in the tag field or with extensions such as TLVs.
+In SRv6, packets can be steered through an ordered list of instructions, called segments. These segments may encode simple routing instructions for forwarding packets along a specific network path, but also steer them through Virtual Network Functions (VNFs) or physical service appliances available in the network.
+
+In an SRv6 network, each of these services, running either on a physical appliance or in a virtual environment, are associated with a segment identifier (SID). These service SIDs are then leveraged as part of a SID-list to steer packets through the corresponding services.  Service SIDs may be combined together in a SID-list to achieve service programming, but also with other types of segments as defined in {{RFC8402}}.  SRv6 thus provides a fully integrated solution for overlay, underlay and service programming. Furthermore, SRv6 {{RFC8986}} supports metadata transportation in the Segment Routing Header {{RFC8754}}, either natively in the tag field or with extensions such as TLVs.
 
 This document describes how a service can be associated with a SID, including legacy services with no SR capabilities, and how these service SIDs are integrated within an SR policy. The definition of an SR Policy and the traffic steering mechanisms are covered in {{RFC9256}} and hence outside the scope of this document.
 
@@ -199,7 +196,7 @@ The definition of control plane components, such as service segment discovery, i
 
 # Terminology
 
-This document leverages the terminology proposed in {{RFC8402}}, {{RFC8660}}, {{RFC8754}}, {{RFC8986}} and {{RFC9256}}.  It also introduces the following new terms.
+This document leverages the terminology proposed in {{RFC8402}}, {{RFC8754}}, {{RFC8986}} and {{RFC9256}}.  It also introduces the following new terms.
 
 Service segment: A segment associated with a service. The service may either run on a physical appliance or in a virtual environment such as a virtual machine or container.
 
@@ -214,13 +211,13 @@ Classification and steering mechanisms are defined in section 8 of {{RFC9256}} a
 
 As documented in the above reference, traffic is classified when entering an SR domain.  The SR policy headend may, depending on its capabilities, classify the packets on a per-destination basis, via simple FIB entries, or apply more complex policy routing rules requiring to look deeper into the packet.  These rules are expected to support basic policy routing such as 5-tuple matching.  In addition, the IPv6 SRH tag field defined in {{RFC8754}} can be used to identify and classify packets sharing the same set of properties.  Classified traffic is then steered into the appropriate SR policy and forwarded as per the SID-list(s) of the active candidate path.
 
-SR traffic can be re-classified by an SR endpoint along the original SR policy (e.g., DPI service) or a transit node intercepting the traffic.  This node is the head-end of a new SR policy that is imposed onto the packet, either as a stack of MPLS labels or as an IPv6 SRH.
+SR traffic can be re-classified by an SR endpoint along the original SR policy (e.g., DPI service) or a transit node intercepting the traffic.  This node is the head-end of a new SR policy that is imposed onto the packet as SRv6 encapsulation.
 
 # Service Segments
 
 In the context of this document, the term service refers to a physical appliance running on dedicated hardware, a virtualized service inside an isolated environment such as a Virtual Machine (VM), container or namespace, or any process running on a compute element.  A service may also comprise multiple sub-components running in different processes or containers.  Unless otherwise stated, this document does not make any assumption on the type or execution environment of a service.
 
-The execution of a service can be integrated as part of an SR policy by assigning a segment identifier, or SID, to the service and including this service SID in the SR policy SID-list.  Such a service SID may be of local or global significance. In the former case, other segments, such as prefix or adjacency segments, can be used to steer the traffic up to the node where the service segment is instantiated. In the latter case, the service is directly reachable from anywhere in the routing domain.  This is realized with SR-MPLS by assigning a SID from the global label block ({{RFC8660}}), or with SRv6 by advertising the SID locator in the routing protocol ({{RFC8986}}).  It is up to the network operator to define the scope and reachability of each service SID.  This decision can be based on various considerations such as infrastructure dynamicity, available control plane or orchestration system capabilities.
+The execution of a service can be integrated as part of an SR policy by assigning a segment identifier, or SID, to the service and including this service SID in the SR policy SID-list.  Such a service SID may be of local or global significance. In the former case, other segments, such as prefix or adjacency segments, can be used to steer the traffic up to the node where the service segment is instantiated. In the latter case, the service is directly reachable from anywhere in the routing domain.  This is realized with SRv6 by advertising the SID locator in the routing protocol ({{RFC8986}}).  It is up to the network operator to define the scope and reachability of each service SID.  This decision can be based on various considerations such as infrastructure dynamicity, available control plane or orchestration system capabilities.
 
 This document categorizes services in two types, depending on whether they are able to behave properly in the presence of SR information or not. These are respectively named SR-aware and SR-unaware services.
 
@@ -230,7 +227,7 @@ An SR-aware service can process the SR information in the packets it receives. T
 
 An SR-aware service is associated with a locally instantiated service segment, which is used to steer traffic through it.
 
-If the service is configured to intercept all the packets passing through the appliance, the underlying routing system only has to implement a default SR endpoint behavior (e.g., SR-MPLS node segment or SRv6 End behavior), and the corresponding SID will be used to steer traffic through the service.
+If the service is configured to intercept all the packets passing through the appliance, the underlying routing system only has to implement a default SR endpoint behavior (e.g., SRv6 End behavior), and the corresponding SID will be used to steer traffic through the service.
 
 If the service requires the packets to be directed to a specific virtual interface, networking queue or process, a dedicated SR behavior may be required to steer the packets to the appropriate location.  The definition of such service-specific functions is out of the scope of this document.
 
@@ -255,7 +252,7 @@ An SR service policy is an SR policy, as defined in {{RFC9256}}, that includes a
 
 Furthermore, binding SIDs (BSIDs) {{RFC8402}} can be leveraged in the context of service policies to reduce the number of SIDs imposed by the headend, provide opacity between domains and improve scalability. For example, a network operator may want a policy in its core domain to include services that are running in one of its datacenters. One option is to define an SR policy at ingress edge of the core domain that explicitly includes all the SIDs needed to steer the traffic through the core and in the DC, but that may result in a long SID-list and requires to update the ingress edge configuration every time the DC part of the policy is modified. Alternatively, a separate policy can be defined at the ingress edge of the datacenter with only the SIDs that needs to be executed there and its BSID included in the core domain policy. That BSID remains stable when the DC policy is modified and can even be shared among several core domain policies that would require the same type of processing in the DC.
 
-This section describes how services can be integrated within an SR-MPLS or SRv6 service policy.
+This section describes how services can be integrated within an SRv6 service policy.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
      +------------------------------------------+
@@ -278,42 +275,6 @@ In its most basic form, the SR policy P1 would be resolved into the SID-list < S
 This model applies regardless of the SR-awareness of the service. If it is SR-unaware, then S simply represents the proxy that takes care of transmitting the packet to the actual service.
 
 Traffic can then be steered into this policy using any of the mechanisms described in {{RFC9256}}.
-
-The following subsections describe the specificities of each SR dataplane.
-
-## SR-MPLS Data Plane {#sec-policy-mpls}
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     +-----------------------------------------------+
-     |                SR-MPLS network                |
-     |                                               |
-+----+----+   ------>   +---------+   ------>   +----+-----+
-|    H    +-------------+    S    +-------------+    E     |
-|(headend)|             |(service)|             |(endpoint)|
-+----+----+             +---------+             +----+-----+
-     |    (1)         (2)         (3)         (4)    |
-     |+---------+ +---------+ +---------+ +---------+|
-     ||   ...   | |  L(S)   | |   ...   | |  L(E)   ||
-     |+---------+ +---------+ +---------+ +---------+|
-     ||  L(S)   | |   ...   | |  L(E)   | |Inner pkt||
-     |+---------+ +---------+ +---------+ +---------+|
-     ||   ...   | |  L(E)   | |Inner pkt|            |
-     |+---------+ +---------+ +---------+            |
-     ||  L(E)   | |Inner pkt|                        |
-     |+---------+ +---------+                        |
-     ||Inner pkt|                                    |
-     |+---------+                                    |
-     +-----------------------------------------------+
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-{: #fig-policy-mpls title="Packet walk in an SR-MPLS network"}
-
-In an SR-MPLS network, the SR policy SID-list is encoded as a stack of MPLS labels {{RFC8660}} and pushed on top of the packet.
-
-In the example shown on {{fig-policy-mpls}}, the SR policy should steer the traffic from the head-end H to the endpoint E via a service S. This translates into an MPLS label stack that includes at least a label L(S) associated to service S and a label L(E) associated to the endpoint E. The label stack may also include additional intermediate SIDs if these are required for traffic engineering (e.g., to encode a low latency path between H and S and / or between S and E) or simply for reachability purposes. Indeed, the service SID L(S) may be taken from the global or local SID block of node S and, in the latter case, one or more SIDs might be needed before L(S) in order for the packet to reach node S (e.g., a prefix-SID of S), where L(S) can be interpreted. The same applies for the SID L(E) at the SR policy endpoint.
-
-Special consideration must be taken into account when using Local SIDs for service identification due to increased label stack depth and the associated impacts.
-
-When the packet arrives at S, this node determines the MPLS payload type and the appropriate behavior for processing the packet based on the semantic locally associated to the top label L(S). If S is an SR-aware service, the SID L(S) may provide additional context or indication on how to process the packet (e.g., a firewall SID may indicate which rule set should be applied onto the packet). If S is a proxy in front of an SR-unaware service, L(S) indicates how and to which service attached to this proxy the packet should be transmitted. At some point in the process, L(S) is also popped from the label stack in order to expose the next SID, which may be L(E) or another intermediate SID.
 
 ## SRv6 Data Plane {#sec-policy-srv6}
 
@@ -352,7 +313,7 @@ The "Inner pkt" on {{fig-policy-srv6}} represents the SRv6 payload, which may be
 
 This section describes several SR proxy behaviors designed to enable SR service programming through SR-unaware services.  A system implementing one of these behaviors may handle the SR processing on behalf of an SR-unaware service and allows the service to properly process the traffic that is steered through it.
 
-A service may be located at any hop in an SR policy, including the last segment.  However, the SR proxy behaviors defined in this section are dedicated to supporting SR-unaware services at intermediate hops in the segment list.  In case an SR-unaware service is at the last segment, it is sufficient to ensure that the SR information is ignored (IPv6 routing extension header with Segments Left equal to 0) or removed before the packet reaches the service (MPLS PHP, SRv6 decapsulation behavior or PSP flavor).
+A service may be located at any hop in an SR policy, including the last segment.  However, the SR proxy behaviors defined in this section are dedicated to supporting SR-unaware services at intermediate hops in the segment list.  In case an SR-unaware service is at the last segment, it is sufficient to ensure that the SR information is ignored (IPv6 routing extension header with Segments Left equal to 0) or removed before the packet reaches the service (SRv6 decapsulation behavior or PSP flavor).
 
 As illustrated on {{fig-proxy}}, the generic behavior of an SR proxy has two parts.  The first part is in charge of passing traffic from the network to the service.  It intercepts the SR traffic destined for the service via a locally instantiated service segment, modifies it in such a way that it appears as non-SR traffic to the service, then sends it out on a given interface, IFACE-OUT, connected to the service.  The second part receives the traffic coming back from the service on IFACE-IN, restores the SR information and forwards it according to the next segment in the list.  IFACE-OUT and IFACE-IN are respectively the proxy interface used for sending traffic to the service and the proxy interface that receives the traffic coming back from the service.  These can be physical interfaces or sub-interfaces (VLANs) and, unless otherwise stated, IFACE-OUT and IFACE-IN can represent the same interface.
 
@@ -398,7 +359,6 @@ Each mechanism has its own characteristics and constraints, which are summarized
                                         |  i  |  i  |  m  |  n  |
                                         |  c  |  c  |  .  |  g  |
 +---------------------------------------+-----+-----+-----+-----+
-|                |       SR-MPLS        |  Y  |  Y  |  Y  |  -  |
 |                |                      |     |     |     |     |
 |   SR flavors   |     Inline SRv6      |  P  |  P  |  P  |  Y  |
 |                |                      |     |     |     |     |
@@ -433,7 +393,7 @@ Note: The use of a shared memory proxy requires both the service (VNF) and the p
 
 ## Static SR Proxy {#sec-proxies-static}
 
-The static proxy is an SR endpoint behavior for processing SR-MPLS or SRv6 encapsulated traffic on behalf of an SR-unaware service.  This proxy thus receives SR traffic that is formed of an MPLS label stack or an IPv6 header on top of an inner packet, which can be Ethernet, IPv4 or IPv6.
+The static proxy is an SR endpoint behavior for processing SRv6 encapsulated traffic on behalf of an SR-unaware service. This proxy thus receives SR traffic that is formed of SRv6 encpasulation on top of an inner packet, which can be Ethernet, IPv4 or IPv6.
 
 A static SR proxy segment is associated with the following mandatory parameters
 
@@ -443,109 +403,17 @@ A static SR proxy segment is associated with the following mandatory parameters
 - IFACE-IN: Local interface receiving the traffic coming back from the service
 - CACHE: SR information to be attached on the traffic coming back from the service, including at least
   * CACHE.SA: IPv6 source address (SRv6 only)
-  * CACHE.LIST: Segment list expressed as MPLS labels or IPv6 address
+  * CACHE.LIST: Segment list expressed as IPv6 address
 
 A static SR proxy segment is thus defined for a specific service, inner packet type and cached SR information.  It is also bound to a pair of directed interfaces on the proxy.  These may be both directions of a single interface, or opposite directions of two different interfaces. The latter is recommended in case the service is to be used as part of a bi-directional SR service policy.  If the proxy and the service both support 802.1Q, IFACE-OUT and IFACE-IN can also represent sub-interfaces.
 
-The first part of this behavior is triggered when the proxy node receives a packet whose active segment matches a segment associated with the static proxy behavior.  It removes the SR information from the packet then sends it on a specific interface towards the associated service.  This SR information corresponds to the full label stack for SR-MPLS or to the encapsulation IPv6 header with any attached extension header in the case of SRv6.
+The first part of this behavior is triggered when the proxy node receives a packet whose active segment matches a segment associated with the static proxy behavior.  It removes the SR information from the packet then sends it on a specific interface towards the associated service.  This SR information corresponds to the encapsulation IPv6 header with any attached extension header.
 
-The second part is an inbound policy attached to the proxy interface receiving the traffic returning from the service, IFACE-IN.  This policy attaches to the incoming traffic the cached SR information associated with the SR proxy segment.  If the proxy segment uses the SR-MPLS data plane, CACHE contains a stack of labels to be pushed on top of the packets.  With the SRv6 data plane, CACHE is defined as a source address, an active segment and an optional SRH (tag, segments left, segment list and metadata).  The proxy encapsulates the packets with an IPv6 header that has the source address, the active segment as destination address and the SRH as a routing extension header.  After the SR information has been attached, the packets are forwarded according to the active segment, which is represented by the top MPLS label or the IPv6 Destination Address. An MPLS TTL or IPv6 Hop Limit value may also be configured in CACHE. If it is not, the proxy should set these values according to the node's default setting for MPLS or IPv6 encapsulation.
+The second part is an inbound policy attached to the proxy interface receiving the traffic returning from the service, IFACE-IN.  This policy attaches to the incoming traffic the cached SR information associated with the SR proxy segment. With the SRv6 data plane, CACHE is defined as a source address, an active segment and an optional SRH (tag, segments left, segment list and metadata).  The proxy encapsulates the packets with an IPv6 header that has the source address, the active segment as destination address and the SRH as a routing extension header.  After the SR information has been attached, the packets are forwarded according to the active segment, which is represented by the IPv6 Destination Address. An IPv6 Hop Limit value may also be configured in CACHE. If it is not, the proxy should set these values according to the node's default setting for IPv6 encapsulation.
 
 In this scenario, there are no restrictions on the operations that can be performed by the service on the stream of packets.  It may operate at all protocol layers, terminate transport layer connections, generate new packets and initiate transport layer connections.  This behavior may also be used to integrate an IPv4-only service into an SRv6 policy.  However, a static SR proxy segment can be used in only one service policy at a time.  As opposed to most other segment types, a static SR proxy segment is bound to a unique list of segments, which represents a directed SR service policy.  This is due to the cached SR information being defined in the segment configuration.  This limitation only prevents multiple segment lists from using the same static SR proxy segment at the same time, but a single segment list can be shared by any number of traffic flows.  Besides, since the returning traffic from the service is re-classified based on the incoming interface, an interface can be used as receiving interface (IFACE-IN) only for a single SR proxy segment at a time.  In the case of a bi-directional SR service policy, a different SR proxy segment and receiving interface are required for the return direction.
 
 The static proxy behavior may also be used for sending traffic through "bump in the wire" services that are transparent to the IP and Ethernet layers. This type of processing is assumed when the inner traffic type is Ethernet, since the original destination address of the Ethernet frame is preserved when the packet is steered into the SR Policy and likely associated with a node downstream of the policy tail-end. In case the inner type is IP (IPv4 or IPv6), the NH-ADDR parameter may be set to a dummy or broadcast Ethernet address, or simply to the address of the proxy receiving interface (IFACE-IN).
-
-### SR-MPLS Pseudocode {#sec-proxies-static-mpls}
-
-#### Static Proxy for Inner Type Ethernet
-
-When processing an MPLS packet whose top label matches a locally instantiated
-MPLS static proxy SID for Ethernet traffic, the following pseudocode is
-executed.
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-S01. POP all labels in the MPLS label stack.
-S02. Submit the frame to the Ethernet module for transmission via
-     interface IFACE-OUT.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-{: #code-static-mpls-eth-sid title="SID processing for MPLS static proxy
-(Ethernet)"}
-
-When processing an Ethernet frame received on the interface IFACE-IN and with a
-destination MAC address that is neither a broadcast address nor matches the
-address of IFACE-IN, the following pseudocode is executed.
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-S01. Retrieve the CACHE entry associated with IFACE-IN.
-S02. If the CACHE entry is not empty {
-S03.   Remove the preamble or Frame Check Sequence (FCS).
-S04.   PUSH all labels from the retrieved CACHE entry.
-S05.   Submit the packet to the MPLS module for transmission as per
-       the top label in the MPLS label stack.
-S06. }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-{: #code-static-mpls-eth-inbound title="Inbound policy for MPLS static proxy
-(Ethernet)"}
-
-#### Static Proxy for Inner Type IPv4
-
-When processing an MPLS packet whose top label matches a locally instantiated
-MPLS static proxy SID for IPv4 traffic, the following pseudocode is
-executed.
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-S01. POP all labels in the MPLS label stack.
-S02. Submit the packet to the IPv4 module for transmission on
-     interface IFACE-OUT via NH-ADDR.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-{: #code-static-mpls-ipv4-sid title="SID processing for MPLS static proxy
-(IPv4)"}
-
-When processing an IPv4 packet received on the interface IFACE-IN and with a
-destination address that does not match any address of IFACE-IN, the following
-pseudocode is executed.
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-S01. Retrieve the CACHE entry associated with IFACE-IN.
-S02. If the CACHE entry is not empty {
-S03.   Decrement the TTL and adjust the checksum accordingly.
-S04.   PUSH all labels from the retrieved CACHE entry.
-S05.   Submit the packet to the MPLS module for transmission as per
-       the top label in the MPLS label stack.
-S06. }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-{: #code-static-mpls-ipv4-inbound title="Inbound policy for MPLS static proxy
-(IPv4)"}
-
-#### Static Proxy for Inner Type IPv6
-
-When processing an MPLS packet whose top label matches a locally instantiated
-MPLS static proxy SID for IPv6 traffic, the following pseudocode is
-executed.
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-S01. POP all labels in the MPLS label stack.
-S02. Submit the packet to the IPv6 module for transmission on
-     interface IFACE-OUT via NH-ADDR.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-{: #code-static-mpls-ipv6-sid title="SID processing for MPLS static proxy
-(IPv6)"}
-
-When processing an IPv6 packet received on the interface IFACE-IN and with a
-destination address that does not match any address of IFACE-IN, the following
-pseudocode is executed.
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-S01. Retrieve the CACHE entry associated with IFACE-IN.
-S02. If the CACHE entry is not empty {
-S03.   Decrement the Hop Limit.
-S04.   PUSH all labels from the retrieved CACHE entry.
-S05.   Submit the packet to the MPLS module for transmission as per
-       the top label in the MPLS label stack.
-S06. }
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-{: #code-static-mpls-ipv6-inbound title="Inbound policy for MPLS static proxy
-(IPv6)"}
 
 ### SRv6 Pseudocode {#sec-proxies-static-srv6}
 
@@ -803,39 +671,9 @@ IPv6 header set to 41 (IPv6).
 
 The dynamic proxy is an improvement over the static proxy that dynamically learns the SR information before removing it from the incoming traffic.  The same information can then be re-attached to the traffic returning from the service.  As opposed to the static SR proxy, no CACHE information needs to be configured.  Instead, the dynamic SR proxy relies on a local caching mechanism on the node instantiating this segment.
 
-Upon receiving a packet whose active segment matches a dynamic SR proxy function, the proxy node pops the top MPLS label or applies the SRv6 End behavior, then compares the updated SR information with the cache entry for the current segment.  If the cache is empty or different, it is updated with the new SR information.  The SR information is then removed and the inner packet is sent towards the service.
+Upon receiving a packet whose active segment matches a dynamic SR proxy function, the proxy node applies the SRv6 End behavior, then compares the updated SR information with the cache entry for the current segment.  If the cache is empty or different, it is updated with the new SR information.  The SR information is then removed and the inner packet is sent towards the service.
 
 The cache entry is not mapped to any particular packet, but instead to an SR service policy identified by the receiving interface (IFACE-IN). Any non-link-local IP packet or non-local Ethernet frame received on that interface will be re-encapsulated with the cached headers as described in {{sec-proxies-static}}.  The service may thus drop, modify or generate new packets without affecting the proxy.
-
-### SR-MPLS Pseudocode
-
-The dynamic proxy SR-MPLS pseudocode is obtained by inserting the following instructions at the beginning of the static SR-MPLS pseudocode ({{sec-proxies-static-mpls}}).
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-S01. If the top label S bit is different from 0 {
-S02.   Discard the packet.
-S03. }
-S04. POP the top label.
-S05. Copy the MPLS label stack in a CACHE entry associated with the
-     interface IFACE-IN.
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-{: #code-dynamic-mpls-sid title="SID processing for MPLS dynamic proxy"}
-
-S01: As mentioned at the beginning of {{sec-proxies}}, an SR proxy is not needed to include an SR-unaware service at the end of an SR policy.
-
-S05: An implementation may optimize the caching procedure by copying information
-into the cache only if it is different from the current content of the cache
-entry. Furthermore, a TTL margin can be configured for the top label stack entry
-to prevent constant cache updates when multiple equal-cost paths with different
-hop counts are used towards the SR proxy node.  In that case, a TTL difference
-smaller than the configured margin should not trigger a cache update (provided
-that the labels are the same).
-
-When processing an Ethernet frame, an IPv4 packet or an IPv6 packet received on
-the interface IFACE-IN and with a destination address that does not match any
-address of IFACE-IN, the pseudocode reported in
-{{code-static-mpls-eth-inbound}}, {{code-static-mpls-ipv4-inbound}} or
-{{code-static-mpls-ipv6-inbound}}, respectively, is executed.
 
 ### SRv6 Pseudocode
 
@@ -875,7 +713,7 @@ respectively, is executed.
 
 ## Shared Memory SR Proxy
 
-The shared memory proxy is an SR endpoint behavior for processing SR-MPLS or SRv6 encapsulated traffic on behalf of an SR-unaware service. This proxy behavior leverages a shared-memory interface with a virtualized service (VNF) in order to hide the SR information from an SR-unaware service while keeping it attached to the packet.  We assume in this case that the proxy and the VNF are running on the same compute node.  A typical scenario is an SR-capable vrouter running on a container host and forwarding traffic to VNFs isolated within their respective container.
+The shared memory proxy is an SR endpoint behavior for processing SRv6 encapsulated traffic on behalf of an SR-unaware service. This proxy behavior leverages a shared-memory interface with a virtualized service (VNF) in order to hide the SR information from an SR-unaware service while keeping it attached to the packet.  We assume in this case that the proxy and the VNF are running on the same compute node.  A typical scenario is an SR-capable vrouter running on a container host and forwarding traffic to VNFs isolated within their respective container.
 
 ## Masquerading SR Proxy
 
@@ -1024,15 +862,7 @@ S09. }
 
 # Metadata
 
-## MPLS Data Plane
-
-Metadata can be carried for SR-MPLS traffic in a Segment Routing Header inserted between the last MPLS label and the MPLS payload. When used solely as a metadata container, the SRH does not carry any segment but only the mandatory header fields, including the tag and flags, and any TLVs that is required for transporting the metadata.
-
-Since the MPLS encapsulation has no explicit protocol identifier field to indicate the protocol type of the MPLS payload, how to indicate the presence of metadata in an MPLS packet is a potential issue to be addressed.  One possible solution is to add the indication about the presence of metadata in the semantic of the SIDs. Note that only the SIDs whose behavior involves looking at the metadata or the MPLS payload would need to include such semantic (e.g., service segments). Other segments, such as topological segments, are not affected by the presence of metadata.  Another, more generic, solution is to introduce a protocol identifier field within the MPLS packet as described in {{I-D.xu-mpls-payload-protocol-identifier}}.
-
-## IPv6 Data Plane
-
-### SRH TLV Objects
+## SRH TLV Objects
 
 The IPv6 SRH TLV objects are designed to carry all sorts of metadata. TLV objects can be imposed by the ingress edge router that steers the traffic into the SR service policy.
 
@@ -1042,7 +872,7 @@ An SR-aware service that re-classifies the traffic and steers it into a new SR s
 
 Metadata imposition and handling will be further discussed in a future version of this document.
 
-#### Opaque Metadata TLV
+### Opaque Metadata TLV
 
 This document defines an SRv6 TLV called Opaque Metadata TLV. This is a fixed-length container to carry any type of Service Metadata. No assumption is made by this document on the structure or the content of the carried metadata. The Opaque Metadata TLV has the following format:
 
@@ -1064,7 +894,7 @@ where:
 - Length: 14.
 - Service Metadata: 14 octets of opaque data.
 
-#### NSH Carrier TLV
+### NSH Carrier TLV
 
 This document defines an SRv6 TLV called NSH Carrier TLV. It is a container to carry Service Metadata in the form of Variable-Length Metadata as defined in {{RFC8300}} for NSH MD Type 2. The NSH Carrier TLV has the following format:
 
@@ -1085,7 +915,7 @@ where:
 - Flags: 8 bits.  No flags are defined in this document.  SHOULD be set to 0 on transmission and MUST be ignored on receipt.
 - Service Metadata: a list of Service Metadata TLV as defined in {{RFC8300}} for NSH MD Type 2.
 
-### SRH Tag
+## SRH Tag
 
 The SRH tag identifies a packet as part of a group or class of packets {{RFC8754}}.
 
@@ -1108,17 +938,11 @@ In addition, any service relying on the Linux kernel, version 4.10 and later, or
 
 ## Proxy Behaviors
 
-The static SR proxy is available for SR-MPLS and SRv6 on various Cisco hardware and software platforms.  Furthermore, the following proxies are available on open-source software.
+The static SR proxy is available for SRv6 on various Cisco hardware and software platforms.  Furthermore, the following proxies are available on open-source software.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
                                         +-------------+-------------+
                                         |     VPP     |    Linux    |
-+---+-----------------------------------+-------------+-------------+
-| M |           Static proxy            |  Available  | In progress |
-| P |                                   |             |             |
-| L |           Dynamic proxy           | In progress | In progress |
-| S |                                   |             |             |
-|   |        Shared memory proxy        | In progress | In progress |
 +---+-----------------------------------+-------------+-------------+
 |   |           Static proxy            |  Available  | In progress |
 | S |                                   |             |             |
@@ -1130,12 +954,6 @@ The static SR proxy is available for SR-MPLS and SRv6 on various Cisco hardware 
 +---+-----------------------------------+-------------+-------------+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 {: #tab-implem title="Open-source implementation status table"}
-
-
-# Related Works
-
-The Segment Routing solution addresses a wide problem that covers both topological and service policies.  The topological and service instructions can be either deployed in isolation or in combination.  SR has thus a wider applicability than the architecture defined in {{RFC7665}}.  Furthermore, the inherent property of SR is a stateless network fabric.  In SR, there is no state within the fabric to recognize a flow and associate it with a policy.  State is only present at the ingress edge of the SR domain, where the policy is encoded into the packets.  This is completely different from other proposals such as {{RFC8300}} and the MPLS label swapping mechanism described in {{RFC8595}}, which rely on state configured at every hop of the service chain.
-
 
 # IANA Considerations
 
